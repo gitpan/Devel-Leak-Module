@@ -1,0 +1,31 @@
+NAME
+    Devel::Leak::Module - Track loaded modules and namespaces
+
+SYNOPSIS
+    TO BE COMPLETED
+
+DESCRIPTION
+METHODS
+SUPPORT
+    Bugs should be always be reported via the CPAN bug tracker at
+
+    <http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Devel-Leak-Module>
+
+    For other issues, or commercial enhancement or support, contact the
+    author.
+
+AUTHORS
+    Adam Kennedy <adamk@cpan.org>
+
+SEE ALSO
+    Devel::Leak, Devel::Leak::Object
+
+COPYRIGHT
+    Copyright 2007 Adam Kennedy.
+
+    This program is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself.
+
+    The full text of the license can be found in the LICENSE file included
+    with this module.
+
