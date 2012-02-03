@@ -8,11 +8,26 @@ Devel::Leak::Module - Track loaded modules and namespaces
 
 =head1 SYNOPSIS
 
-TO BE COMPLETED
+  # 1. Load all modules we believe are needed
+  require My::Everything;
+  
+  # 2. Set a checkpoint for all loaded modules/packages/namespaces
+  Devel::Leak::Module::checkpoint();
+  
+  # 3. Run code that should not result in loading any new code
+  My::foo();
+  
+  # 4. Confirm that no new code was loaded during
+  Devel::Leak::Module::print_new();
 
 =head1 DESCRIPTION
 
-=head1 METHODS
+B<Devel::Leak::Module> is a simple little convenience module for tracking
+module, package and namespace creation.
+
+The synopsis code above describes pretty much the main way that it works.
+
+=head1 FUNCTIONS
 
 =cut
 
@@ -22,10 +37,8 @@ no strict 'refs';
 
 use vars qw{$VERSION};
 BEGIN {
-	$VERSION = '0.01_04';
-}
+	$VERSION = '0.02';
 
-BEGIN {
 	# Force sort::hints to be populated early, to avoid a case where
 	# calling all_modules creates a new namespace.
 	my @foo = qw{ b c a };
@@ -34,6 +47,7 @@ BEGIN {
 	# If Scalar::Util and List::Util are around, load them.
 	# This prevents a problem when tests are run in the debugger.
 	# If they AREN'T available, we don't care
+	local $@;
 	eval "require Scalar::Util; require List::Util;";
 }
 
@@ -53,26 +67,6 @@ sub checkpoint {
 	%PACKAGES   = map { $_ => 1 } all_packages();
 	%MODULES    = %INC;
 	return 1;
-}
-
-sub new_namespaces {
-	grep { ! $NAMESPACES{$_} } all_namespaces();
-}
-
-sub new_packages {
-	grep { ! $PACKAGES{$_} } all_packages();
-}
-
-sub new_modules {
-	grep { ! $MODULES{$_} } all_modules();
-}
-
-# Boolean true/false for if there are any new anything
-sub any_new {
-	return 1 if new_namespaces();
-	return 1 if new_packages();
-	return 1 if new_modules();
-	return '';
 }
 
 # Print a summary of newly created things
@@ -97,12 +91,44 @@ sub print_new {
 
 }
 
+# Boolean true/false for if there are any new anything
+sub any_new {
+	return 1 if new_namespaces();
+	return 1 if new_packages();
+	return 1 if new_modules();
+	return '';
+}
+
+sub new_modules {
+	grep { ! $MODULES{$_} } all_modules();
+}
+
+sub new_packages {
+	grep { ! $PACKAGES{$_} } all_packages();
+}
+
+sub new_namespaces {
+	grep { ! $NAMESPACES{$_} } all_namespaces();
+}
+
 
 
 
 
 #####################################################################
 # Capture Functions
+
+# Get the list of all modules
+sub all_modules {
+	sort grep { $_ ne 'dumpvar.pl' } keys %INC;
+}
+
+# Start with all the namespaces,
+# limited to the ones that look like classes.
+# Then check each namespace actually contains something.
+sub all_packages {
+	grep { _OCCUPIED($_) } grep { _CLASS($_) } all_namespaces();
+}
 
 sub all_namespaces {
 	my @names = ();
@@ -113,18 +139,6 @@ sub all_namespaces {
 		unshift @stack, _namespaces($c);
 	}
 	return @names;
-}
-
-# Start with all the namespaces,
-# limited to the ones that look like classes.
-# Then check each namespace actually contains something.
-sub all_packages {
-	grep { _OCCUPIED($_) } grep { _CLASS($_) } all_namespaces();
-}
-
-# Get the list of all modules
-sub all_modules {
-	sort grep { $_ ne 'dumpvar.pl' } keys %INC;
 }
 
 
@@ -151,14 +165,14 @@ sub _namespaces {
 
 # Params::Util::_CLASS
 sub _CLASS ($) {
-	(defined $_[0] and ! ref $_[0] and $_[0] =~ m/^[^\W\d]\w*(?:::\w+)*$/s) ? $_[0] : undef;
+	(defined $_[0] and ! ref $_[0] and $_[0] =~ m/^[^\W\d]\w*(?:::\w+)*\z/s) ? $_[0] : undef;
 }
 
 # Class::Autouse::_namespace_occupied
 sub _OCCUPIED ($) {
 	# Handle the most likely case
 	my $class = shift or return undef;
-	return 1 if defined @{"${class}::ISA"};
+	return 1 if @{"${class}::ISA"};
 
 	# Get the list of glob names, ignoring namespaces
 	foreach ( keys %{"${class}::"} ) {
@@ -193,7 +207,7 @@ L<Devel::Leak>, L<Devel::Leak::Object>
 
 =head1 COPYRIGHT
 
-Copyright 2007 - 2008 Adam Kennedy.
+Copyright 2007 - 2012 Adam Kennedy.
 
 This program is free software; you can redistribute
 it and/or modify it under the same terms as Perl itself.

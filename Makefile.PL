@@ -1,10 +1,7 @@
-use strict;
-use inc::Module::Install;
+use inc::Module::Install::DSL 1.04;
 
-name           'Devel-Leak-Module';
-all_from       'lib/Devel/Leak/Module.pm';
-build_requires 'Test::More'   => '0.47';
-build_requires 'Test::Script' => '1.02';
-install_script 'script/perlbloat';
-
-WriteAll;
+name           Devel-Leak-Module
+all_from       lib/Devel/Leak/Module.pm
+test_requires  Test::More   0.47
+test_requires  Test::Script 1.07
+install_script perlbloat
